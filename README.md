@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Quick Note
 
 This PyTorch for SSD playground is a staging environment for changes to the original work and, itself, a work in progress.  It is directly based on https://github.com/amdegroot/ssd.pytorch to which, in the near future, a custom dataset feature and other improvements will be contributed as a PR.  That is, once things are a bit more stable.
@@ -199,3 +200,7 @@ We have accumulated the following to-do list, which we hope to complete in the n
 - A huge thank you to [Alex Koltun](https://github.com/alexkoltun) and his team at [Webyclip](webyclip.com) for their help in finishing the data augmentation portion.
 - A list of other great SSD ports that were sources of inspiration (especially the Chainer repo):
   * [Chainer](https://github.com/Hakuyume/chainer-ssd), [Keras](https://github.com/rykov8/ssd_keras), [MXNet](https://github.com/zhreshold/mxnet-ssd), [Tensorflow](https://github.com/balancap/SSD-Tensorflow)
+=======
+# Sketch-detection-SSD
+Still ongoing project
+>>>>>>> 67f8e0bf082e02bb02ec8be58ef91e541f9b3c5b

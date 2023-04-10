@@ -1,5 +1,10 @@
 # custom for weights
 weights/
+# dataset dir
+line_dataset1/
+line_dataset2/
+line_dataset_coco/
+detection_output/
 
 # Image data
 *.JPG
