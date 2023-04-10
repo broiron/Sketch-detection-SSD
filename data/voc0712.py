@@ -16,17 +16,22 @@ if sys.version_info[0] == 2:
     import xml.etree.cElementTree as ET
 else:
     import xml.etree.ElementTree as ET
-
+'''
 VOC_CLASSES = (  # always index 0
     'aeroplane', 'bicycle', 'bird', 'boat',
     'bottle', 'bus', 'car', 'cat', 'chair',
     'cow', 'diningtable', 'dog', 'horse',
     'motorbike', 'person', 'pottedplant',
     'sheep', 'sofa', 'train', 'tvmonitor')
-
+'''
+VOC_CLASSES = ('line', 'triangle', 'rectangle', 'pentagon', 'background')
+# VOC_CLASSES=('line', 'background')
+# VOC_CLASSES=('line', 'background')
 # note: if you used our download scripts, this should be right
-VOC_ROOT = osp.join(HOME, "data/VOCdevkit/")
-
+#VOC_ROOT = osp.join(HOME, "broiron", "line_dataset_vol1_pascal_train")
+#VOC_ROOT=osp.join('/home/broiron/broiron', 'line_dataset_vol1_pascal_train')
+#VOC_ROOT=osp.join('/home/broiron/broiron', 'line_dataset_vol5')
+VOC_ROOT=osp.join('/home/broiron/broiron', 'line_dataset_vol1_pascal')
 
 class VOCAnnotationTransform(object):
     """Transforms a VOC annotation into a Tensor of bbox coords and label index
@@ -65,7 +70,7 @@ class VOCAnnotationTransform(object):
             pts = ['xmin', 'ymin', 'xmax', 'ymax']
             bndbox = []
             for i, pt in enumerate(pts):
-                cur_pt = int(bbox.find(pt).text) - 1
+                cur_pt = int(float(bbox.find(pt).text)) - 1
                 # scale height or width
                 cur_pt = cur_pt / width if i % 2 == 0 else cur_pt / height
                 bndbox.append(cur_pt)
@@ -95,9 +100,10 @@ class VOCDetection(data.Dataset):
     """
 
     def __init__(self, root,
-                 image_sets=[('2007', 'trainval'), ('2012', 'trainval')],
+                 #image_sets=[('2007', 'trainval'), ('2012', 'trainval')],
+				 image_sets='train',
                  transform=None, target_transform=VOCAnnotationTransform(),
-                 dataset_name='VOC0712'):
+                 dataset_name='default'):
         self.root = root
         self.image_set = image_sets
         self.transform = transform
@@ -106,9 +112,12 @@ class VOCDetection(data.Dataset):
         self._annopath = osp.join('%s', 'Annotations', '%s.xml')
         self._imgpath = osp.join('%s', 'JPEGImages', '%s.jpg')
         self.ids = list()
-        for (year, name) in image_sets:
-            rootpath = osp.join(self.root, 'VOC' + year)
-            for line in open(osp.join(rootpath, 'ImageSets', 'Main', name + '.txt')):
+        rootpath = osp.join(self.root)
+        if self.image_set == 'train':
+            for line in open(osp.join(rootpath, 'ImageSets', 'Main')+'/train.txt'):
+                self.ids.append((rootpath, line.strip()))
+        else:
+            for line in open(osp.join(rootpath, 'ImageSets', 'Main')+'/test.txt'):
                 self.ids.append((rootpath, line.strip()))
 
     def __getitem__(self, index):
@@ -131,6 +140,7 @@ class VOCDetection(data.Dataset):
 
         if self.transform is not None:
             target = np.array(target)
+            #print(target)
             img, boxes, labels = self.transform(img, target[:, :4], target[:, 4])
             # to rgb
             img = img[:, :, (2, 1, 0)]

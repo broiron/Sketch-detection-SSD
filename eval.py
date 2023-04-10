@@ -10,8 +10,8 @@ import torch.nn as nn
 import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
 from data import VOC_ROOT, VOCAnnotationTransform, VOCDetection, BaseTransform
-from data import CUSTOM_ROOT, CustomAnnotationTransform, CustomDetection, BaseTransform
-from data.custom import get_targets
+#from data import CUSTOM_ROOT, CustomAnnotationTransform, CustomDetection, BaseTransform
+#from data.custom import get_targets
 import torch.utils.data as data
 from data.config import coco, voc, custom, MEANS
 
@@ -24,6 +24,8 @@ import argparse
 import numpy as np
 import pickle
 import cv2
+
+from layers.functions import Detect
 
 if sys.version_info[0] == 2:
     import xml.etree.cElementTree as ET
@@ -132,14 +134,14 @@ def parse_rec(filename):
     for obj in tree.findall('object'):
         obj_struct = {}
         obj_struct['name'] = obj.find('name').text
-        obj_struct['pose'] = obj.find('pose').text
+        #obj_struct['pose'] = obj.find('pose').text
         obj_struct['truncated'] = int(obj.find('truncated').text)
         obj_struct['difficult'] = int(obj.find('difficult').text)
         bbox = obj.find('bndbox')
-        obj_struct['bbox'] = [int(bbox.find('xmin').text) - 1,
-                              int(bbox.find('ymin').text) - 1,
-                              int(bbox.find('xmax').text) - 1,
-                              int(bbox.find('ymax').text) - 1]
+        obj_struct['bbox'] = [int(float(bbox.find('xmin').text)) - 1,
+                              int(float(bbox.find('ymin').text)) - 1,
+                              int(float(bbox.find('xmax').text)) - 1,
+                              int(float(bbox.find('ymax').text)) - 1]
         objects.append(obj_struct)
 
     return objects
@@ -191,7 +193,7 @@ def get_output_dir(name, phase):
 
 def get_voc_results_file_template(image_set, cls_name):
     # <basepath>/results/det_test_aeroplane.txt
-    filename = 'det_' + image_set + '_%s.txt' % (cls_name)
+    filename = 'det_' + image_set + '_%s.txt' % (str(cls_name))
     filedir = os.path.join(output_dir, 'results')
     if not os.path.exists(filedir):
         os.makedirs(filedir)
@@ -200,13 +202,15 @@ def get_voc_results_file_template(image_set, cls_name):
 
 
 def write_results_file(all_boxes, dataset):
-    for cls_ind, cls_name in enumerate([labelmap]):
-        print('Writing {:s} detection results file'.format(cls_name))
+    for cls_ind, cls_name in enumerate(labelmap):
+        print('Writing {:s} detection results file'.format(str(cls_name)))
         filename = get_voc_results_file_template(set_type, cls_name)
         with open(filename, 'wt') as f:
             for im_ind, index in enumerate(dataset.ids):
                 # Read image so we can draw boxes
-                img = cv2.imread(os.path.join(CUSTOM_ROOT, 'test', index))
+                #img = cv2.imread(os.path.join(CUSTOM_ROOT, 'test', index))
+                # print(index)
+                # img = cv2.imread(os.path.join(index[0], index[1])) 
                 dets = all_boxes[cls_ind+1][im_ind]
                 if dets == []:
                     continue
@@ -230,7 +234,7 @@ def write_results_file(all_boxes, dataset):
                             img = cv2.rectangle(img, (dets[k, 0], dets[k, 1]),
                                 (dets[k, 2], dets[k, 3]), 
                                 (0,255,0), 3)
-                    cv2.imwrite(os.path.join(output_dir, 'recs_' + index), img)
+                    #cv2.imwrite(os.path.join(output_dir, 'recs_' + index), img)
                                            
 
     # TODO:  add COCO
@@ -244,8 +248,10 @@ def do_python_eval(use_07=True):
     aps = []
     # The PASCAL VOC metric changed in 2010
     print('VOC07 metric? ' + ('Yes' if use_07 else 'No'))
-    for i, cls_name in enumerate([labelmap]):
+    #for i, cls_name in enumerate([labelmap]):
+    for cls_name in labelmap:
         filename = get_voc_results_file_template(set_type, cls_name)
+        print(filename)
         rec, prec, ap = voc_eval(
            filename, annopath, imgsetpath.format(set_type), cls_name,
            ovthresh=0.3, use_07_metric=use_07)
@@ -450,21 +456,25 @@ def test_net(save_folder, net, cuda, dataset, transform, top_k,
     #    all_boxes[cls][image] = N x 5 array of detections in
     #    (x1, y1, x2, y2, score)
     all_boxes = [[[] for _ in range(num_images)]
-                 for _ in range(len([labelmap])+1)]
+                 for _ in range(len(labelmap)+1)]
 
     # timers
     _t = {'im_detect': Timer(), 'misc': Timer()}
     # output_dir = get_output_dir('ssd300_120000', set_type)
     det_file = os.path.join(output_dir, 'detections.pkl')
+    #내가 추가함
+    detect = Detect(num_classes=2, bkg_label=1, top_k=200, conf_thresh=0.01, nms_thresh=0.445)
 
     for i in range(num_images):
-        im, gt, h, w, _ = dataset.pull_item(i)
-
-        x = Variable(im.unsqueeze(0))
-        x = x.to(device)
-        _t['im_detect'].tic()
-        detections = net(x).data
-        detect_time = _t['im_detect'].toc(average=False)
+        im, gt, h, w= dataset.pull_item(i)
+        # 추가함 내가
+       	with torch.no_grad():
+            x = Variable(im.unsqueeze(0))
+            x = x.to(device)
+            _t['im_detect'].tic()
+            detections = net.forward(x)
+            detections = detect.forward(detections[0], detections[1], detections[2])
+            detect_time = _t['im_detect'].toc(average=False)
 
         # skip j = 0, because it's the background class
         for j in range(1, detections.size(1)):
@@ -509,9 +519,11 @@ if __name__ == '__main__':
 
     # Load data (TODO:  add COCO)
     if args.dataset == 'VOC':
-        dataset = VOCDetection(args.dataset_root, [(set_type)],
-                            BaseTransform(cfg['min_dim'], MEANS),
-                            VOCAnnotationTransform())
+        dataset = VOCDetection(root=args.dataset_root, 
+		                    # image_set=[(set_type)],
+                            image_sets='test',
+                            transform=BaseTransform(cfg['min_dim'], MEANS),
+                            target_transform=VOCAnnotationTransform())
     else:
         dataset = CustomDetection(root=args.dataset_root, 
                                     image_set=[(set_type)], 

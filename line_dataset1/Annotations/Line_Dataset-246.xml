@@ -1,0 +1,33 @@
+<annotation>
+  <folder>Line</folder>
+  <filename>Line_Dataset-246.jpg</filename>
+  <source>
+    <database>Unknown</database>
+    <annotation>Unknown</annotation>
+    <image>Unknown</image>
+  </source>
+  <size>
+    <width>2182</width>
+    <height>1538</height>
+    <depth></depth>
+  </size>
+  <segmented>0</segmented>
+  <object>
+    <name>line</name>
+    <truncated>0</truncated>
+    <occluded>0</occluded>
+    <difficult>0</difficult>
+    <bndbox>
+      <xmin>972.92</xmin>
+      <ymin>646.0</ymin>
+      <xmax>1088.08</xmax>
+      <ymax>753.74</ymax>
+    </bndbox>
+    <attributes>
+      <attribute>
+        <name>rotation</name>
+        <value>0.0</value>
+      </attribute>
+    </attributes>
+  </object>
+</annotation>

@@ -217,11 +217,26 @@ def nms(boxes, scores, overlap=0.5, top_k=200):
         torch.index_select(y1, 0, idx, out=yy1)
         torch.index_select(x2, 0, idx, out=xx2)
         torch.index_select(y2, 0, idx, out=yy2)
+        
+        # code changed 3/12
+        #xx1 = torch.index_select(x1, 0, idx)
+        #yy1 = torch.index_select(y1, 0, idx)
+        #xx2 = torch.index_select(x2, 0, idx)
+        #yy2 = torch.index_select(y2, 0, idx)
+
         # store element-wise max with next highest score
-        xx1 = torch.clamp(xx1, min=x1[i])
-        yy1 = torch.clamp(yy1, min=y1[i])
-        xx2 = torch.clamp(xx2, max=x2[i])
-        yy2 = torch.clamp(yy2, max=y2[i])
+        # changed min to float 
+        #xx1 = torch.clamp(xx1, min=x1[i])
+        #yy1 = torch.clamp(yy1, min=y1[i])
+        #xx2 = torch.clamp(xx2, max=x2[i])
+        #yy2 = torch.clamp(yy2, max=y2[i])
+        xx1 = torch.clamp(xx1, min=float(x1[i]))
+        yy1 = torch.clamp(yy1, min=float(y1[i]))
+        xx2 = torch.clamp(xx2, max=float(x2[i]))
+        yy2 = torch.clamp(yy2, max=float(y2[i]))
+        
+        # added a required_grad=False
+        #with torch.no_grad():
         w.resize_as_(xx2)
         h.resize_as_(yy2)
         w = xx2 - xx1

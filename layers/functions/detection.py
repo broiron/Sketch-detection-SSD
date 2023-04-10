@@ -20,7 +20,7 @@ class Detect(Function):
             raise ValueError('nms_threshold must be non negative.')
         self.conf_thresh = conf_thresh
         self.variance = cfg['variance']
-
+    # 여기를 Static function으로...?
     def forward(self, loc_data, conf_data, prior_data):
         """
         Args:

@@ -8,11 +8,14 @@ import torchvision.transforms as transforms
 import cv2
 import numpy as np
 
-COCO_ROOT = osp.join(HOME, 'data/coco/')
+# COCO_ROOT = osp.join(HOME, 'data/coco/')
+# COCO_ROOT = '/home/broiron/broiron/model_train/line_dataset_coco'
+COCO_ROOT = '/home/broiron/broiron/line_dataset_vol1_coco'
 IMAGES = 'images'
 ANNOTATIONS = 'annotations'
 COCO_API = 'PythonAPI'
 INSTANCES_SET = 'instances_{}.json'
+'''
 COCO_CLASSES = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
                 'train', 'truck', 'boat', 'traffic light', 'fire', 'hydrant',
                 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog',
@@ -28,7 +31,8 @@ COCO_CLASSES = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
                 'keyboard', 'cell phone', 'microwave oven', 'toaster', 'sink',
                 'refrigerator', 'book', 'clock', 'vase', 'scissors',
                 'teddy bear', 'hair drier', 'toothbrush')
-
+'''
+COCO_CLASSES = ('line', 'background')
 
 def get_label_map(label_file):
     label_map = {}
@@ -62,7 +66,7 @@ class COCOAnnotationTransform(object):
                 bbox = obj['bbox']
                 bbox[2] += bbox[0]
                 bbox[3] += bbox[1]
-                label_idx = self.label_map[obj['category_id']] - 1
+                label_idx = self.label_map[obj['category_id']] -1 #뺌
                 final_box = list(np.array(bbox)/scale)
                 final_box.append(label_idx)
                 res += [final_box]  # [xmin, ymin, xmax, ymax, label_idx]
@@ -83,13 +87,15 @@ class COCODetection(data.Dataset):
         in the target (bbox) and transforms it.
     """
 
-    def __init__(self, root, image_set='trainval35k', transform=None,
+    def __init__(self, root, image_set='line', transform=None,
                  target_transform=COCOAnnotationTransform(), dataset_name='MS COCO'):
         sys.path.append(osp.join(root, COCO_API))
         from pycocotools.coco import COCO
-        self.root = osp.join(root, IMAGES, image_set)
+        # self.root = osp.join(root, IMAGES, image_set)
+        self.root = osp.join(root, IMAGES)
         self.coco = COCO(osp.join(root, ANNOTATIONS,
                                   INSTANCES_SET.format(image_set)))
+        #self.coco = COCO(osp.join(root, 'annotations/instances_default.json'))
         self.ids = list(self.coco.imgToAnns.keys())
         self.transform = transform
         self.target_transform = target_transform
@@ -120,11 +126,11 @@ class COCODetection(data.Dataset):
         img_id = self.ids[index]
         target = self.coco.imgToAnns[img_id]
         ann_ids = self.coco.getAnnIds(imgIds=img_id)
-
         target = self.coco.loadAnns(ann_ids)
         path = osp.join(self.root, self.coco.loadImgs(img_id)[0]['file_name'])
         assert osp.exists(path), 'Image path does not exist: {}'.format(path)
-        img = cv2.imread(osp.join(self.root, path))
+        # img = cv2.imread(osp.join(self.root, path))
+        img = cv2.imread(path)
         height, width, _ = img.shape
         if self.target_transform is not None:
             target = self.target_transform(target, width, height)
@@ -136,7 +142,7 @@ class COCODetection(data.Dataset):
             img = img[:, :, (2, 1, 0)]
 
             target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
-        return torch.from_numpy(img).permute(2, 0, 1), target, height, width
+        return torch.from_numpy(img).permute(2, 0, 1), target, height, width, img_id
 
     def pull_image(self, index):
         '''Returns the original image object at index in PIL form

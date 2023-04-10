@@ -30,10 +30,12 @@ class SSD(nn.Module):
         self.phase = phase
         self.num_classes = num_classes
         # self.cfg = (coco, voc, custom)[num_classes == 2]
-        self.cfg = custom # HARD CODED
+        # self.cfg = custom # HARD CODED
+        self.cfg = coco
         self.priorbox = PriorBox(self.cfg) 
         with torch.no_grad():
             self.priors = Variable(self.priorbox.forward())
+            #self.priors = torch.tensor(self.priorbox.forward())
         self.size = size
         self.base = base
 
@@ -53,7 +55,6 @@ class SSD(nn.Module):
                                  top_k=200,
                                  conf_thresh=0.01,
                                  nms_thresh=0.445)
-
     def forward(self, x):
         """Applies network layers and ops on input image(s) x.
 
@@ -105,11 +106,22 @@ class SSD(nn.Module):
         loc = torch.cat([o.view(o.size(0), -1) for o in loc], 1)
         conf = torch.cat([o.view(o.size(0), -1) for o in conf], 1)
         if self.phase == "test":
+            '''
             output = self.detect(
                 loc.view(loc.size(0), -1, 4),                   # loc preds
                 self.softmax(conf.view(conf.size(0), -1,
                              self.num_classes)),                # conf preds
                 self.priors.type(type(x.data))                 # default boxes
+                # torch.tensor(self.priors, dtype=x.dtype, device=x.device)
+                # self.priors
+                # 여기서 에러 발생
+            )
+            '''
+            output = (
+                loc.view(loc.size(0), -1, 4),
+                self.softmax(conf.view(conf.size(0), -1,
+                             self.num_classes)),
+                self.priors.type(type(x.data))
             )
         else:
             output = (

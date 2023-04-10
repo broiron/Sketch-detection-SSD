@@ -1,6 +1,6 @@
 from .voc0712 import VOCDetection, VOCAnnotationTransform, VOC_CLASSES, VOC_ROOT
-from .custom import CustomDetection, CustomAnnotationTransform, CUSTOM_CLASSES, CUSTOM_ROOT
-# from .coco import COCODetection, COCOAnnotationTransform, COCO_CLASSES, COCO_ROOT
+# from .custom import CustomDetection, CustomAnnotationTransform, CUSTOM_CLASSES, CUSTOM_ROOT
+from .coco import COCODetection, COCOAnnotationTransform, COCO_CLASSES, COCO_ROOT
 from .config import *
 import torch
 import cv2
@@ -28,6 +28,7 @@ def detection_collate(batch):
 
 
 def base_transform(image, size, mean):
+    print(image.shape)
     x = cv2.resize(image, (size, size)).astype(np.float32)
     x -= mean
     x = x.astype(np.float32)
