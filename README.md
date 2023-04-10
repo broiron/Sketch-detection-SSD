@@ -6,7 +6,7 @@ Still ongoing project
 https://github.com/sunshiding/ssd-pytorch-custom
 
 ## What we do?
-What we trying to do is to make network detect line and polygons from sketch images.
+What we trying to do is to make SSD detect line and polygons from sketch images.
 
 
 # Quick Note
